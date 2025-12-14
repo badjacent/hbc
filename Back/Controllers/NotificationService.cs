@@ -21,11 +21,14 @@ namespace Back.Controllers {
         {
             _repository.OnOrderChanged += async (e) => 
             {
-                await _ordersHub.Clients.All.SendAsync("OrderChanged", e);
+                var product = _repository.GetProduct(e.Payload.ProductId);
+                if (product is null) throw new Exception("Product not found");
+                var orderDto = OrderDto.EntityToDto(e.Payload, product);
+                await _ordersHub.Clients.All.SendAsync("OrderChanged", new { type = e.Type, payload = orderDto });
             };
             _repository.OnCustomerChanged += async (e) => 
             {
-                await _ordersHub.Clients.All.SendAsync("CustomerChanged", e);
+                await _ordersHub.Clients.All.SendAsync("CustomerChanged", new { type = e.Type, payload = CustomerDto.EntityToDto(e.Payload) });
             };
 
 

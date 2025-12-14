@@ -30,7 +30,7 @@ public class Repository {
     };
     public Dictionary<int, Order> Orders = new Dictionary<int, Order>();
 
-    public event Action<DataChangedEvent<OrderDto>> OnOrderChanged = delegate { };
+    public event Action<DataChangedEvent<Order>> OnOrderChanged = delegate { };
     public event Action<DataChangedEvent<Customer>> OnCustomerChanged = delegate { };
     
 
@@ -112,7 +112,7 @@ public class Repository {
     }
 
     public Order AddOrder(Order order) {
-        DataChangedEvent<OrderDto>? change = null;
+        DataChangedEvent<Order>? change = null;
         _lock.EnterWriteLock();
         try
         {
@@ -123,12 +123,13 @@ public class Repository {
 
             order.Id = Orders.Keys.Count > 0 ? Orders.Keys.Max() + 1 : 1;
             Orders[order.Id] = order;
-            Products.TryGetValue(order.ProductId, out var product);
-            change = new DataChangedEvent<OrderDto>
+
+            change = new DataChangedEvent<Order>
             {
                 Type = ChangeType.Added,
-                Payload = OrderDto.EntityToDto(order, product)
+                Payload = order
             };
+
             return order;
         }
         finally
@@ -139,7 +140,7 @@ public class Repository {
     }
 
     public Order EditOrder(Order order) {
-        DataChangedEvent<OrderDto>? change = null;
+        DataChangedEvent<Order>? change = null;
         _lock.EnterWriteLock();
         try
         {
@@ -149,11 +150,10 @@ public class Repository {
             if (!Employees.ContainsKey(order.SalespersonId)) throw new Exception("Salesperson not found");
 
             Orders[order.Id] = order;
-            Products.TryGetValue(order.ProductId, out var product);
-            change = new DataChangedEvent<OrderDto>
+            change = new DataChangedEvent<Order>
             {
                 Type = ChangeType.Updated,
-                Payload = OrderDto.EntityToDto(order, product)
+                Payload = order
             };
             return order;
         }
@@ -165,23 +165,36 @@ public class Repository {
     }
 
     public void DeleteOrder(Order order) {
-        DataChangedEvent<OrderDto>? change = null;
+        DataChangedEvent<Order>? change = null;
         _lock.EnterWriteLock();
         try
         {
             if (!Orders.ContainsKey(order.Id)) throw new Exception("Order not found");
             Orders.Remove(order.Id);
-            Products.TryGetValue(order.ProductId, out var product);
-            change = new DataChangedEvent<OrderDto>
+
+            change = new DataChangedEvent<Order>
             {
                 Type = ChangeType.Deleted,
-                Payload = OrderDto.EntityToDto(order, product)
+                Payload = order
             };
         }
         finally
         {
             _lock.ExitWriteLock();
             if (change is not null) OnOrderChanged?.Invoke(change);
+        }
+    }
+
+    public Product GetProduct(int productId) {
+        _lock.EnterReadLock();
+        try
+        {
+            Products.TryGetValue(productId, out var product);
+            return product;
+        }
+        finally
+        {
+            _lock.ExitReadLock();
         }
     }
 }
