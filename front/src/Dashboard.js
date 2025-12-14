@@ -25,7 +25,7 @@ export default function Dashboard() {
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "20px", fontFamily: "Segoe UI, sans-serif" }}>
       <header style={{ marginBottom: "20px" }}>
-        <h1>Bookstore Manager</h1>
+        <h1>Product Manager</h1>
       </header>
 
       {/* --- TOP: CUSTOMER SELECTION --- */}
